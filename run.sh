@@ -1,1 +1,0 @@
-npx concurrently "cd cobalt/api && pnpm start" "npx wait-on http://localhost:9000 && node index.js"
