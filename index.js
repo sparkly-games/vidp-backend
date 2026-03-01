@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 80; // You can change this to 3001 if port 80 is restricted
+const port = process.env.PORT || 3000; // You can change this to 3001 if port 80 is restricted
 
 // Allow your Vercel frontend to talk to your iMac
 const cors = require('cors');
