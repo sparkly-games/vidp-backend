@@ -4,26 +4,25 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y curl python3 build-essential && rm -rf /var/lib/apt/lists/*
 
 # 2. Setup pnpm and concurrently globally
-RUN npm install -g pnpm corepack concurrently && corepack enable
+RUN npm install -g pnpm@latest corepack && corepack enable && npm install -g concurrently
 
 WORKDIR /app
 
-# 3. Copy files
-COPY package.json pnpm-lock.yaml* ./
-# If cobalt has its own package.json, copy that too
-COPY cobalt/api/package.json ./cobalt/api/
-
-# 4. Install dependencies for both (Express and Cobalt)
-RUN pnpm install
-RUN cd cobalt/api && pnpm install
-
+# 3. Copy EVERYTHING first (needed because Cobalt is a monorepo)
+# We do this before 'pnpm install' because Cobalt's internal 
+# links (@imput/version-info) require the other folders to exist.
 COPY . .
 
-# 5. Make sure your ports are ready
+# 4. Install dependencies for the root (your Express app)
+RUN pnpm install
+
+# 5. Install dependencies for Cobalt's API
+# We run this from the root using --filter to let pnpm handle the workspace logic
+RUN cd cobalt/api && pnpm install --no-frozen-lockfile
+
+# 6. Expose ports
 EXPOSE 3000
 EXPOSE 9000
 
-# 6. THE COMMAND
-# We use the globally installed 'concurrently' instead of 'npx'
-# We use --kill-others to make sure if one crashes, the whole container restarts
+# 7. Start both
 CMD ["concurrently", "--kill-others", "cd cobalt/api && pnpm start", "node index.js"]
